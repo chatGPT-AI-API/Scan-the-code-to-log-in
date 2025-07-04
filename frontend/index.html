@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>扫码登录</title>
+    <style>
+        .container { text-align: center; margin-top: 50px; }
+        #qrcode { margin: 20px auto; }
+        .status { color: #666; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>扫码登录</h2>
+        <div id="qrcode"></div>
+        <p class="status" id="status">等待扫码...</p>
+    </div>
+
+    <script>
+        let ws;
+        let checkInterval;
+
+        async function initQRCode() {
+            const response = await fetch('http://localhost:3000/api/qrcode');
+            const { qrcode, token } = await response.json();
+            
+            document.getElementById('qrcode').innerHTML = 
+                `<img src="${qrcode}" width="200" height="200">`;
+
+            // 建立WebSocket连接
+            ws = new WebSocket(`ws://localhost:8080`);
+            ws.onmessage = (event) => {
+                const { status } = JSON.parse(event.data);
+                updateStatus(status);
+            };
+
+            // 发送token到服务端进行状态监听
+            ws.onopen = () => ws.send(JSON.stringify({ token }));
+        }
+
+        function updateStatus(status) {
+            const statusMap = {
+                'pending': { text: '等待扫码', color: '#666' },
+                'scanned': { text: '扫码成功', color: '#09f' },
+                'confirmed': { text: '登录成功', color: '#090' },
+                'expired': { text: '二维码过期', color: '#f00' }
+            };
+            const { text, color } = statusMap[status];
+            document.getElementById('status').innerHTML = text;
+            document.getElementById('status').style.color = color;
+        }
+
+        window.onload = initQRCode;
+    </script>
+</body>
+</html>
