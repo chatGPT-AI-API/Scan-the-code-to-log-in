@@ -27,7 +27,11 @@
                 `<img src="${qrcode}" width="200" height="200">`;
 
             // 建立WebSocket连接
-            ws = new WebSocket(`ws://localhost:8080`);
+            ws = new WebSocket(`ws://localhost:8080/ws`);
+            ws.onerror = () => {
+                setTimeout(initQRCode, 3000);
+                document.getElementById('status').innerHTML = '连接异常，正在重试...';
+            };
             ws.onmessage = (event) => {
                 const { status } = JSON.parse(event.data);
                 updateStatus(status);

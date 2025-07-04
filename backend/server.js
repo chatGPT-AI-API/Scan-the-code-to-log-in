@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const QRCode = require('qrcode');
 const Redis = require('ioredis');
 
@@ -20,10 +21,13 @@ const WebSocket = require('ws');
 
 const app = express();
 const port = 3000;
+
+// 配置静态文件服务
+app.use(express.static(path.join(__dirname, '../frontend')));
 const redisClient = process.env.NODE_ENV === 'production' 
   ? new Redis(6379, 'redis-server') 
   : new MockRedis();
-const wss = new WebSocket.Server({ port: 8080 });
+const wss = new WebSocket.Server({ port: 8080, path: '/ws' });
 
 // Redis连接初始化
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
@@ -49,8 +53,12 @@ app.get('/api/qrcode', async (req, res) => {
 wss.on('connection', (ws) => {
   ws.on('message', async (message) => {
     const { token } = JSON.parse(message);
-    const status = await redisClient.get(token);
-    ws.send(JSON.stringify({ status }));
+    const checkStatus = async () => {
+      const status = await redisClient.get(token);
+      ws.send(JSON.stringify({ status }));
+    };
+    setInterval(checkStatus, 2000);
+    checkStatus();
   });
 });
 

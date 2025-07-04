@@ -12,7 +12,10 @@
 # 安装依赖
 npm install
 
-# 启动后端服务
+# 开发模式（热更新）
+npm run dev
+
+# 生产模式
 node backend/server.js
 
 # 访问前端页面
