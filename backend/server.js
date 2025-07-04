@@ -1,11 +1,28 @@
 const express = require('express');
 const QRCode = require('qrcode');
-const { createClient } = require('redis');
+const Redis = require('ioredis');
+
+class MockRedis {
+  constructor() {
+    this.store = new Map();
+    this.on = () => this;
+  }
+  async connect() { return this }
+  async setEx(key, ttl, value) {
+    this.store.set(key, value);
+    setTimeout(() => this.store.delete(key), ttl * 1000);
+  }
+  async get(key) {
+    return this.store.get(key);
+  }
+}
 const WebSocket = require('ws');
 
 const app = express();
 const port = 3000;
-const redisClient = createClient();
+const redisClient = process.env.NODE_ENV === 'production' 
+  ? new Redis(6379, 'redis-server') 
+  : new MockRedis();
 const wss = new WebSocket.Server({ port: 8080 });
 
 // Redis连接初始化
