@@ -27,7 +27,7 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 const redisClient = process.env.NODE_ENV === 'production' 
   ? new Redis(6379, 'redis-server') 
   : new MockRedis();
-const wss = new WebSocket.Server({ port: 8080, path: '/ws' });
+const wss = new WebSocket.Server({ port: 3001, path: '/ws' });
 
 // Redis连接初始化
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
@@ -50,15 +50,23 @@ app.get('/api/qrcode', async (req, res) => {
 });
 
 // WebSocket实时状态推送
+// 修改WebSocket处理逻辑
 wss.on('connection', (ws) => {
   ws.on('message', async (message) => {
-    const { token } = JSON.parse(message);
-    const checkStatus = async () => {
-      const status = await redisClient.get(token);
-      ws.send(JSON.stringify({ status }));
-    };
-    setInterval(checkStatus, 2000);
-    checkStatus();
+    const data = JSON.parse(message);
+    
+    // 扫码成功处理
+    if (data.type === 'scanSuccess') {
+      await redisClient.setEx(data.token, 300, 'confirmed');
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'loginSuccess',
+            token: data.token
+          }));
+        }
+      });
+    }
   });
 });
 

@@ -35,6 +35,12 @@
             ws.onmessage = (event) => {
                 const { status } = JSON.parse(event.data);
                 updateStatus(status);
+                if(status === 'scanned') {
+                    ws.send(JSON.stringify({ 
+                        type: 'confirm',
+                        token: token
+                    }));
+                }
             };
 
             // 发送token到服务端进行状态监听
