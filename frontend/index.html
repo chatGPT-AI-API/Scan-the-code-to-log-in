@@ -51,6 +51,9 @@
             const { text, color } = statusMap[status];
             document.getElementById('status').innerHTML = text;
             document.getElementById('status').style.color = color;
+            if(status === 'confirmed') {
+              window.location.href = '/dashboard';
+            }
         }
 
         window.onload = initQRCode;

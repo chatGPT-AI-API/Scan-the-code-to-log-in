@@ -62,6 +62,13 @@ wss.on('connection', (ws) => {
   });
 });
 
+// 扫码确认接口
+app.post('/api/confirm', express.json(), async (req, res) => {
+  const { token } = req.body;
+  await redisClient.setEx(token, 300, 'confirmed');
+  res.sendStatus(200);
+});
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
